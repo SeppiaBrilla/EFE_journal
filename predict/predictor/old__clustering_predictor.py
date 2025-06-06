@@ -1,6 +1,5 @@
 import os
 import pickle
-from .base_predictor import Predictor, Predictor_initializer, isnan
 from tqdm import tqdm
 from sys import stderr
 import concurrent.futures
@@ -13,14 +12,20 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 import joblib
 from time import time
 
-class kmeans_initializer(Predictor_initializer):
+def isnan(array:list):
+    for a in array:
+        if str(a) == "nan":
+            return True
+    return False
+
+class kmeans_initializer:
     def __init__(self, pretrained_clustering_file_path:'str', order:'dict', idx2comb:'dict') -> None:
         super().__init__()
         self.kmeans = joblib.load(pretrained_clustering_file_path)
         self.order = order
         self.idx2comb = idx2comb
 
-class Kmeans_predictor(Predictor, BaseEstimator, ClassifierMixin):
+class Kmeans_predictor(BaseEstimator, ClassifierMixin):
 
     MODEL_NAME = "kmeans.pkl"
 

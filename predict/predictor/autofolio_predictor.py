@@ -1,4 +1,3 @@
-from .base_predictor import Predictor, Predictor_initializer
 from tqdm import tqdm
 from sys import stderr
 import platform
@@ -10,13 +9,13 @@ import os
 from time import time
 import uuid
 
-class Autofolio_initializer(Predictor_initializer):
+class Autofolio_initializer:
     def __init__(self, model:'str', max_threads:'int') -> None:
         super().__init__()
         self.model = model
         self.max_threads = max_threads
 
-class Autofolio_predictor(Predictor):
+class Autofolio_predictor:
     
     MODEL_NAME = "autofolio_random_forest_model"
     CACHE_DIR = ".cache"

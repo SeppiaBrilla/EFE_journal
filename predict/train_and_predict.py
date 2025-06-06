@@ -6,7 +6,6 @@ import os
 
 from sklearn.model_selection import train_test_split
 from predictor.kmeans_predictor import Kmeans_predictor
-from kmeans_as import Kmeans_predictor
 from predictor.autofolio_predictor import Autofolio_predictor
 from tqdm import tqdm
 

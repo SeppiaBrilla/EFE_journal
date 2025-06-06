@@ -6,8 +6,13 @@ import concurrent.futures
 from tqdm import tqdm
 import json
 from sys import stderr
-from .base_predictor import isnan
 from time import time
+
+def isnan(array:list):
+    for a in array:
+        if str(a) == "nan":
+            return True
+    return False
 
 class Kmeans_predictor:
 
@@ -35,14 +40,20 @@ class Kmeans_predictor:
         train = self.training_data
         validation = self.validation_data
 
-        training_features = [[str(f) for f in self.features_data[self.features_data["inst"] == datapoint["inst"]].to_numpy()[0].tolist()] 
+        training_features:list|np.ndarray = [[str(f) for f in self.features_data[self.features_data["inst"] == datapoint["inst"]].to_numpy()[0].tolist()] 
                              for datapoint in self.training_data]
         times = {opt:0 for opt in self.training_data[0]["times"].keys()}
         for i in range(len(self.training_data)):
             inst = self.training_data[i]["inst"]
             training_features[i].pop(training_features[i].index(inst))
+            training_features[i] = [float(f) for f in training_features[i]]
+            train[i]['features'] = training_features
             for key in self.training_data[i]["times"].keys():
                 times[key] += self.training_data[i]["times"][key]
+
+        train = self.training_data
+        validation = self.validation_data
+
 
         self.sb = min(times.items())[0]
 
@@ -55,14 +66,28 @@ class Kmeans_predictor:
                                                                   shared_tqdm)
         self.clustering_parameters = hyperparameters
         self.par10score = score
-        self.model = KMeans(**self.clustering_parameters)
+        self.model = KMeans(**hyperparameters)
         y_pred = self.model.fit_predict(training_features)
-        cluster_range = range(hyperparameters["n_clusters"])
-        stats = {i: {comb:0 for comb in self.idx2comb.values()} for i in cluster_range}
+        stats = {i: {comb:0 for comb in self.idx2comb.values()} for i in range(hyperparameters["n_clusters"])}
         for i in range(len(train)):
             for option in train[i]["times"].keys():
-                stats[y_pred[i]][option] += train[i]["times"][option]
-        self.order = {str(i): {k:v for k, v in sorted(stats[i].items(), key=lambda item: item[1], reverse=False)} for i in cluster_range}
+                stats[int(y_pred[i])][option] += train[i]["times"][option]
+        self.order = {
+            str(i): 
+            {k:v for k, v in sorted(stats[i].items(), key=lambda item: item[1], reverse=False)} 
+            for i in range(hyperparameters["n_clusters"])
+        }
+        new_score = 0
+        for datapoint in validation:
+            datapoint_features = self.features_data[self.features_data["inst"] == datapoint["inst"]].to_numpy()[0].tolist()
+            datapoint_features.pop(datapoint_features.index(datapoint["inst"]))
+            datapoint_features = np.array(datapoint_features)
+            preds = self.model.predict(datapoint_features.reshape(1, -1))
+            datapoint_candidates = list(self.idx2comb.values())
+            option = self.__get_prediction(datapoint_candidates, int(preds[0]), self.order)
+            new_score += datapoint["times"][option]
+
+        assert score == new_score
 
     def __get_clustering_parameters(self, training_features:'np.ndarray', 
                                     train_data:'list[dict]', 
@@ -130,12 +155,7 @@ class Kmeans_predictor:
             if candidate in options:
                 return candidate
 
-    def __get_dataset(self, dataset:'list') -> 'list[dict]':
-        if type(dataset[0]) == float:
-            return [{"inst":"", "features":dataset}]
-        return dataset
-
-    def predict(self, dataset:'list[dict]|list[float]') -> 'list[dict]|dict':
+    def predict(self, dataset:'list[dict]') -> 'list[dict]':
         """
         Original predict method.
         Given a dataset, return a list containing each prediction for each datapoint and the sum of the total predicted time.
@@ -147,10 +167,7 @@ class Kmeans_predictor:
         Output
             A tuple containing:
                 - a list of dicts with, for each datapoint, the chosen option and the corresponding predicted time
-                - a float corresponding to the total time of the predicted options
         """
-        is_single = type(dataset[0]) == float
-        dataset = self.__get_dataset(dataset)
 
         predictions = []
         for datapoint in tqdm(dataset):
@@ -161,13 +178,7 @@ class Kmeans_predictor:
             else:
                 category = self.model.predict(feat)
                 options = list(self.idx2comb.values())
-                if filter:
-                    options = [o for o in self.comb2idx.keys() if datapoint["features"][self.comb2idx[o]] < .5]
-                    if len(options) == 0:
-                        options = list(self.idx2comb.values())
                 chosen_option = self.__get_prediction(options, int(category[0]), self.order)
             predictions.append({"chosen_option": chosen_option, "inst": datapoint["inst"], "time": time() - start})
 
-        if is_single:
-            return predictions[0]
         return predictions
