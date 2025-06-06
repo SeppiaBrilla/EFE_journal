@@ -1,0 +1,8 @@
+.cache
+data/competitive_data/weights
+*/csv_features
+.vscode
+params/
+data/tsvs
+data/weights
+__pycache__
