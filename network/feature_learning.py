@@ -9,11 +9,9 @@ from json import loads, dump
 from helper import dict_lists_to_list_of_dicts, is_competitive, set_seed, split_data, is_competitive, Dataset
 from torch.utils.data import DataLoader
 from transformers import  BertTokenizer
-import pandas as pd
 import numpy as np
-from kmeans_as import Kmeans_predictor
 from sklearn.decomposition import PCA
-from competitive_model import CompetitiveModel
+from models import CompetitiveModel
 from training import train
 from tqdm import tqdm
 

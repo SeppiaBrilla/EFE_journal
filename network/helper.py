@@ -61,7 +61,6 @@ def split_data(x, fold, buckets=None):
         x_test.append(x_local.pop(idx))
 
     x_train = x_local
-
     
     return  x_train, x_test
 

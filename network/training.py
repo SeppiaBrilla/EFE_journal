@@ -76,7 +76,8 @@ def train(model:nn.Module,
           device:torch.device,
           model_class,
           hyperparam:dict,
-          shared_tqdm:tqdm) -> Tuple[nn.Module, dict, float]:
+          shared_tqdm:tqdm,
+          temporary_save:str|None=None) -> Tuple[nn.Module, dict, float]:
 
     model = model.to(device)
     data = {"train": {"loss":[]}, "validation": {"loss":[]}}
@@ -106,5 +107,7 @@ def train(model:nn.Module,
             shared_tqdm.update((epochs - epoch))
             break
         shared_tqdm.update(1)
+        if temporary_save is not None:
+            torch.save(model.state_dict(), temporary_save)
     
     return best_model, data, best_loss

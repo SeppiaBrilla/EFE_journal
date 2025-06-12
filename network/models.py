@@ -1,9 +1,10 @@
 from transformers import  BertModel, BertConfig
+from typing import Callable
 import torch.nn as nn
 import torch
 
-class CompetitiveModel(nn.Module):
-    def __init__(self, feature_size, output_size) -> None:
+class Model(nn.Module):
+    def __init__(self, feature_size:int, output_size:int, final_Activation_function:Callable|None=None) -> None:
         super().__init__()
         self.config = BertConfig(max_position_embeddings=2048, hidden_dropout_prob=0, attention_probs_dropout_prob=0)
         self.bert = BertModel(self.config)
@@ -12,6 +13,7 @@ class CompetitiveModel(nn.Module):
         self.post_features = nn.Linear(feature_size, 200)
         self.output_layer = nn.Linear(200, output_size)
         self.activation = nn.functional.tanh
+        self.final_activation = final_Activation_function
 
     def forward(self, inputs):
         _, encoded_input = self.bert(**inputs, return_dict = False)
@@ -22,7 +24,14 @@ class CompetitiveModel(nn.Module):
         out = self.post_features(out)
         out = nn.functional.relu(out)
         out = self.dropout(out)
-        return self.output_layer(out)
+        out = self.output_layer(out)
+        if self.final_activation:
+            out = self.final_activation(out)
+        return out
+
+class CompetitiveModel(Model):
+    def __init__(self, feature_size, output_size) -> None:
+        super().__init__(feature_size, output_size, None)
 
     def __get_feature(self, inputs):
         _, encoded_input = self.bert(**inputs, return_dict = False)
@@ -70,3 +79,7 @@ class CompetitiveModel(nn.Module):
             features.append(out)
         del model
         return features
+
+class RegressionModel(Model):
+    def __init__(self, feature_size:int, output_size:int) -> None:
+        super().__init__(feature_size, output_size, nn.functional.relu)

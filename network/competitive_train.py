@@ -6,7 +6,7 @@ from json import loads, dump
 from helper import dict_lists_to_list_of_dicts, is_competitive, set_seed, split_data, is_competitive, Dataset
 from torch.utils.data import DataLoader
 from transformers import  BertTokenizer
-from competitive_model import CompetitiveModel
+from models import CompetitiveModel
 from training import train
 from tqdm import tqdm
 from sklearn.model_selection import train_test_split
