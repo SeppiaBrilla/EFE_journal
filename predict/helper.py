@@ -1,5 +1,4 @@
 import argparse
-from predictor.base_predictor import Predictor
 from predictor.old__clustering_predictor import Kmeans_predictor
 from predictor.autofolio_predictor import Autofolio_predictor
 import torch
@@ -8,7 +7,7 @@ import random
 
 def get_predictor(predictor_type:'str', 
                   train_data:'list[dict]', 
-                  **kwargs) -> 'Predictor':
+                  **kwargs) -> 'Kmeans_predictor|Autofolio_predictor':
     if predictor_type == "kmeans":
         if "idx2comb" not in kwargs:
             raise Exception(f"predictor_type {predictor_type} needs idx2comb. idx2comb cannot be None")
