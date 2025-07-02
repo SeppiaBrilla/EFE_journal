@@ -93,7 +93,7 @@ class Autofolio_predictor:
                 subprocess.run(
                     ["python", "AutoFolio/scripts/autofolio",
                      "--performance_csv", times_file, "--feature_csv", features_file, "--output_dir", f"{self.PERSONAL_UUID}",
-                     "-t","--wallclock_limit", str(18000), "--runcount_limit", str(999999999), "--save", pre_trained_model])
+                     "-t", "--wallclock_limit", str(18000), "--runcount_limit", str(999999999), "--save", pre_trained_model])
                 print(f"personal UUID: {self.PERSONAL_UUID}")
             else:
                 subprocess.run(

@@ -40,10 +40,7 @@ argcomplete.autocomplete(parser)
 def main():
     arguments = parser.parse_args()
     f = open(arguments.dataset)
-    dataset_train = json.load(f)
-    f.close()
-    f = open(arguments.dataset.replace('train','test'))
-    dataset_test = json.load(f)
+    dataset = json.load(f)
     f.close()
     fold = arguments.split_fold
     original_features = pd.read_csv(arguments.features)
@@ -53,13 +50,14 @@ def main():
     os.makedirs(save_folder, exist_ok=True)
     
     # (x_train, _), (x_validation, _), (x_test, _) = get_dataloader(dataset, dataset, [fold])
-    x_train, x_validation = split_data(dataset_train, fold=fold, buckets=5)
+    x_train, x_test = split_data(dataset, fold=fold, buckets=10)
+    x_train, x_validation = split_data(x_train, fold=fold, buckets=10)
     # x_train += x_validation
     # x_validation = x_train[len(x_train)//10]
     # x_train = x_train[:len(x_train)//10]
     train_instances = [(x["instance_name"], x["all_times"]) for x in x_train]
     validation_instances = [(x["instance_name"], x["all_times"]) for x in x_validation]
-    test_instances = [(x["instance_name"], x["all_times"]) for x in dataset_test]
+    test_instances = [(x["instance_name"], x["all_times"]) for x in x_test]
 
     idx2comb = {idx:comb for idx, comb in enumerate(sorted([t["combination"] for t in x_train[0]["all_times"]]))}
 
@@ -85,11 +83,11 @@ def main():
         })
 
     times = {}
-    for datapoint in x_train + x_validation + dataset_test:
+    for datapoint in x_train + x_validation + x_test:
         times[datapoint["instance_name"]] = {t["combination"]:t["time"] for t in datapoint["all_times"]}
 
-    opt_times = {comb["combination"]:0 for comb in dataset_train[0]["all_times"]}
-    for datapoint in dataset_train + dataset_test:
+    opt_times = {comb["combination"]:0 for comb in dataset[0]["all_times"]}
+    for datapoint in dataset:
         for t in datapoint["all_times"]:
             opt_times[t["combination"]] += t["time"]
     sb_key = min(opt_times.items(), key = lambda x: x[1])[0]

@@ -74,7 +74,6 @@ class Kmeans_predictor(BaseEstimator, ClassifierMixin):
         predictor = Kmeans_predictor(train_data, idx2comb, features)
         ```
         """
-        Predictor.__init__(self)
         BaseEstimator.__init__(self)
         
         # Store all parameters as attributes for sklearn compatibility

@@ -24,7 +24,7 @@ parser.add_argument("--pre_trained", required=False)
 parser.add_argument("--history", required=False)
 parser.add_argument("--features_size", required=False, type=int)
 parser.add_argument("--batch-size", required=False, type=int, default=4)
-parser.add_argument("--patience", required=False, type=int, default=3)
+parser.add_argument("--patience", required=False, type=int, default=-1)
 
 argcomplete.autocomplete(parser)
 def main():
@@ -39,7 +39,7 @@ def main():
     history_file = arguments.history
     feature_size = arguments.features_size
     batch_size = arguments.batch_size
-    patience = arguments.patience
+    patience = arguments.patience if arguments.patience != -1 else epochs
 
     f = open(dataset)
     data = loads(f.read())

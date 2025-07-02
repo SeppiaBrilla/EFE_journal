@@ -5,8 +5,6 @@ import json
 import os
 
 from sklearn.model_selection import train_test_split
-from predictor.kmeans_predictor import Kmeans_predictor
-from predictor.autofolio_predictor import Autofolio_predictor
 from tqdm import tqdm
 
 from helper import set_seed
@@ -36,7 +34,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-t", "--type", choices=["kmeans", "autofolio"], help="the heuristic to use to make a choiche", required=True)
 parser.add_argument("-f", "--features", type=str, help="The features to use (in csv format) with the heuristic", required=True)
 parser.add_argument("-d", "--dataset", type=str, help="The dataset to use (in json format)", required=True)
-parser.add_argument("--history", type=str, help="The history file (in json format)", required=False)
 parser.add_argument("-v", "--validation-split", type=float, help="The amount of data to use in validation", required=False, default=.1)
 parser.add_argument("--max_threads", type=int, help="The maximum number of threads to use with Autofolio. Default is 12", required=False)
 parser.add_argument("--time", default=False, help="Whether the script shoud print the time required to get the predictions or not. Default = False", action='store_true')
@@ -55,12 +52,6 @@ def main():
     test_dataset = json.load(f)
     f.close()
 
-    history = None
-    if arguments.history is not None:
-        f = open(arguments.history)
-        history = json.load(f)
-        f.close()
-
     set_seed(arguments.random_seed)
 
     validation_split = arguments.validation_split
@@ -72,7 +63,6 @@ def main():
     # Create save folder if it doesn't exist
     os.makedirs(save_folder, exist_ok=True)
     
-    # (x_train, _), (x_validation, _), (x_test, _) = get_dataloader(dataset, dataset, [fold])
     x_train, x_validation = train_test_split(train_dataset, test_size=validation_split)
     train_instances = [(x["instance_name"], x["all_times"]) for x in x_train]
     validation_instances = [(x["instance_name"], x["all_times"]) for x in x_validation]
@@ -95,8 +85,11 @@ def main():
             opt_times[t["combination"]] += t["time"]
     sb_key = min(opt_times.items(), key = lambda x: x[1])[0]
 
+    assert isinstance(original_train_features, pd.DataFrame)
+
     predictor = None
     if arguments.type == "kmeans":
+        from predictor.kmeans_predictor import Kmeans_predictor
         pbar = tqdm(total=1368)
         predictor = Kmeans_predictor(training_data=train_data, 
                                      validation_data=validation_data,
@@ -106,6 +99,7 @@ def main():
                                      seed=SEED,
                                      max_threads=arguments.max_threads if arguments.max_threads is not None else 12) 
     elif arguments.type == "autofolio":
+        from predictor.autofolio_predictor import Autofolio_predictor
         predictor = Autofolio_predictor(training_data=train_data, 
                                    features=original_train_features, 
                                    max_threads=arguments.max_threads if arguments.max_threads is not None else 12, 
@@ -114,10 +108,6 @@ def main():
                                    model_name=arguments.name)
     else:
         raise Exception(f"predictor_type {arguments.type} unrecognised")
-
-    if history is not None:
-        feature_configuration_results = [fold['score'] for fold in history[str(original_train_features.shape[1] - 1)]]
-        assert predictor.par10score in feature_configuration_results, (predictor.par10score, feature_configuration_results)
 
     total_time = 0
     sb_tot = 0
